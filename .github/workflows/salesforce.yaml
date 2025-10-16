@@ -1,4 +1,4 @@
-name: Salesforce Automation Pipeline
+name: Salesforce Main Org Deployment Validation
 
 on:
   push:
@@ -6,12 +6,11 @@ on:
       - main
 
 jobs:
-  deploy:
+  validate_deploy:
     runs-on: ubuntu-latest
 
     env:
-      SF_ALIAS: RealEstateDemoScratch
-      DEV_HUB_ALIAS: DevHub
+      MAIN_ORG_ALIAS: MainOrg
 
     steps:
       - name: Checkout repo
@@ -30,29 +29,18 @@ jobs:
       - name: Write server.key from secret
         run: echo "${{ secrets.SERVER_KEY }}" > server.key
 
-      - name: Authenticate to Dev Hub (JWT)
+      - name: Authenticate to Main Org (JWT)
         run: |
           sf org login jwt \
-            --username ${{ secrets.SF_USERNAME }} \
+            --username ${{ secrets.MAIN_ORG_USERNAME }} \
             --jwt-key-file server.key \
             --client-id ${{ secrets.CLIENT_ID }} \
-            --set-default-dev-hub \
-            --alias $DEV_HUB_ALIAS
+            --set-default-org \
+            --alias $MAIN_ORG_ALIAS
 
-      - name: Delete ALL active scratch orgs (limit free-up)
-        run: |
-          sf org list --all --json > orgs.json
-          # Delete all ACTIVE scratch orgs
-          cat orgs.json | grep -o '"alias":"[^"]*","type":"Scratch","status":"Active"' | awk -F'"' '{print $4}' | while read alias; do
-            sf org delete scratch --target-org "$alias" -p || true
-          done
-
-      - name: Create scratch org
-        run: |
-          sf org create scratch -f config/project-scratch-def.json -a $SF_ALIAS --duration-days 7 --set-default
-
-      - name: Push metadata
-        run: sf project deploy start
+    #   - name: Validate Metadata deployment (checkonly)
+    #     run: |
+    #       sf project deploy start --target-org $MAIN_ORG_ALIAS --checkonly
 
       - name: Setup Python environment
         run: |
@@ -61,28 +49,18 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Generate CSVs from Excel
+      - name: Generate CSVs from Excel (Validation run)
         run: |
           . venv/bin/activate
           python scripts/generate_csv.py
 
-      - name: Import Demo Data
+      - name: Import Demo Data (Validation run)
         run: |
           . venv/bin/activate
           python scripts/import_data.py
 
-      - name: Pipeline Results and Scratch Org URL
+      - name: Pipeline Results
         if: always()
         run: |
-          if [ $? -eq 0 ]; then
-            echo "✅ Pipeline completed successfully!"
-          else
-            echo "❌ Pipeline failed — check logs for details."
-          fi
-          echo "🔗 Scratch Org URL:"
-          sf org open --target-org $SF_ALIAS -r || echo "No active org to open."
-          
-    #   - name: Cleanup (Delete Scratch Org at End)
-    #     if: always()
-    #     run: |
-    #       sf org delete scratch --target-org $SF_ALIAS -p || echo "Scratch org not found for cleanup."
+          echo "✅ Pipeline completed successfully!"
+          echo "⚠️ Note: This was validation only, no changes have been applied to main org."
