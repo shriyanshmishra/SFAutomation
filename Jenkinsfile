@@ -4,14 +4,15 @@ pipeline {
     environment {
         SF_ALIAS = "RealEstateDemoScratch"
         DEV_HUB_ALIAS = "DevHub"
-        CONNECTED_APP_CONSUMER_KEY = credentials('SALESFORCE_CONSUMER_KEY')  // store this in Jenkins credentials
-        JWT_KEY_FILE = 'assets/server.key'  // path to private key stored in repo or Jenkins workspace
-        SF_USERNAME = credentials('SALESFORCE_USERNAME') // your Dev Hub user email
+        // These match the IDs in your Jenkins credentials setup
+        SF_USERNAME = credentials('sf-username')
+        CONNECTED_APP_CONSUMER_KEY = credentials('sf-client-id')
+        // This references your JWT .key file
+        JWT_KEY_FILE = credentials('sf-jwt-key')
         PYTHON = "python"
     }
 
     stages {
-
         stage('Checkout Code') {
             steps {
                 echo 'Checking out code from GitHub...'
@@ -24,11 +25,11 @@ pipeline {
                 echo 'Authenticating with Salesforce using JWT...'
                 sh """
                 sf org login jwt \
-                  --username ${SF_USERNAME} \
-                  --key-file ${JWT_KEY_FILE} \
-                  --client-id ${CONNECTED_APP_CONSUMER_KEY} \
+                  --username "${SF_USERNAME}" \
+                  --key-file "${JWT_KEY_FILE}" \
+                  --client-id "${CONNECTED_APP_CONSUMER_KEY}" \
                   --set-default-dev-hub \
-                  --alias ${DEV_HUB_ALIAS}
+                  --alias "${DEV_HUB_ALIAS}"
                 """
             }
         }
@@ -86,7 +87,8 @@ pipeline {
         }
         always {
             echo "🧹 Cleaning up scratch org..."
-           // sh "sf org delete scratch -u ${SF_ALIAS} -p || true"
+            // Uncomment below if you want to always delete scratch org after run
+            // sh "sf org delete scratch -u ${SF_ALIAS} -p || true"
         }
     }
 }
