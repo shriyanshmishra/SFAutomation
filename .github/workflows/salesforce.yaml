@@ -38,9 +38,8 @@ jobs:
             --username "$SF_USERNAME" \
             --jwt-key-file server.key \
             --client-id "$CLIENT_ID" \
-            --set-default-org \
-            --alias MainOrg
-
+            --alias MainOrg \
+            --set-default-org            
 
     #   - name: Validate Metadata deployment (checkonly)
     #     run: |
