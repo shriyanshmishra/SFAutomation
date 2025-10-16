@@ -7,7 +7,7 @@ pipeline {
         SF_USERNAME = credentials('sf-username')                // Dev Hub user's email
         CONNECTED_APP_CONSUMER_KEY = credentials('sf-client-id')// Connected App Consumer Key
         JWT_KEY_FILE = credentials('sf-jwt-key')                // server.key (private key file)
-        PYTHON = "python"
+        PYTHON = "python3"
     }
 
     stages {
