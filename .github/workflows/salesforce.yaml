@@ -26,10 +26,6 @@ jobs:
           npm install @salesforce/cli --location=global
           echo "$(npm config get prefix)/bin" >> $GITHUB_PATH
 
-      - name: Install SFDX CLI (legacy for CSV import)
-        run: |
-          npm install sfdx-cli --location=global
-
       - name: Write server.key from secret
         run: echo "${{ secrets.SERVER_KEY }}" > server.key
 
