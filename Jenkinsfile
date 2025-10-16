@@ -8,6 +8,7 @@ pipeline {
         CONNECTED_APP_CONSUMER_KEY = credentials('sf-client-id')// Connected App Consumer Key
         JWT_KEY_FILE = credentials('sf-jwt-key')                // server.key (private key file)
         PYTHON = "python3"
+        VENV_DIR = "venv"
     }
 
     stages {
@@ -39,7 +40,7 @@ pipeline {
                     def exists = sh(script: "sf org list --all | grep ${SF_ALIAS} || true", returnStatus: true)
                     if (exists == 0) {
                         echo "Deleting existing scratch org..."
-                        sh "sf org delete scratch -u ${SF_ALIAS} -p || true"
+                        sh "sf org delete scratch --target-org ${SF_ALIAS} -p || true"
                     } else {
                         echo "No old org found, skipping..."
                     }
@@ -60,26 +61,36 @@ pipeline {
                 sh "sf project deploy start"
             }
         }
-        
-        stage('Install Python dependencies') {
+
+        stage('Setup Python Virtual Environment') {
             steps {
-                echo 'Installing Python dependencies (pandas)...'
-                sh "${PYTHON} -m pip install --upgrade pip"
-                sh "${PYTHON} -m pip install pandas"
+                echo 'Setting up Python virtual environment and installing dependencies...'
+                sh """
+                ${PYTHON} -m venv ${VENV_DIR}
+                . ${VENV_DIR}/bin/activate
+                python -m pip install --upgrade pip
+                pip install pandas
+                """
             }
         }
 
         stage('Generate Data CSVs') {
             steps {
                 echo 'Generating CSVs from Excel data...'
-                sh "${PYTHON} scripts/generate_csv.py"
+                sh """
+                . ${VENV_DIR}/bin/activate
+                python scripts/generate_csv.py
+                """
             }
         }
 
         stage('Import Demo Data') {
             steps {
                 echo 'Importing Accounts, Contacts, and Opportunities...'
-                sh "${PYTHON} scripts/import_data.py"
+                sh """
+                . ${VENV_DIR}/bin/activate
+                python scripts/import_data.py
+                """
             }
         }
     }
@@ -93,8 +104,8 @@ pipeline {
         }
         always {
             echo "🧹 Cleaning up scratch org..."
-            // Uncomment below if you want to always delete scratch org after run
-            // sh "sf org delete scratch -u ${SF_ALIAS} -p || true"
+            // Uncomment to delete scratch org at end of pipeline runs
+            // sh "sf org delete scratch --target-org ${SF_ALIAS} -p || true"
         }
     }
 }
