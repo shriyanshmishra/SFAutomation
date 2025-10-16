@@ -30,13 +30,17 @@ jobs:
         run: echo "${{ secrets.SERVER_KEY }}" > server.key
 
       - name: Authenticate to Main Org (JWT)
+        env:
+            SF_USERNAME: ${{ secrets.SF_USERNAME }}
+            CLIENT_ID: ${{ secrets.CLIENT_ID }}
         run: |
-          sf org login jwt \
-            --username ${{ secrets.MAIN_ORG_USERNAME }} \
+            sf org login jwt \
+            --username "$SF_USERNAME" \
             --jwt-key-file server.key \
-            --client-id ${{ secrets.CLIENT_ID }} \
+            --client-id "$CLIENT_ID" \
             --set-default-org \
-            --alias $MAIN_ORG_ALIAS
+            --alias MainOrg
+
 
     #   - name: Validate Metadata deployment (checkonly)
     #     run: |
