@@ -1,0 +1,5 @@
+Name,Stage,CloseDate,Amount,AccountName,ContactEmail
+Property Deal 1,Qualification,2025-12-31,500000.0,Sunshine Realty,john.doe@sunshinerealty.com
+Property Deal 2,Negotiation,2026-01-15,450000.0,Sunshine Realty,john.doe@sunshinerealty.com
+Property Deal 3,Proposal Sent,2026-02-28,600000.0,Sunshine Realty,jane.smith@sunshinerealty.com
+Property Deal 4,Closed Won,2026-03-10,750000.0,Sunshine Realty,jane.smith@sunshinerealty.com

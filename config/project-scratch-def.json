@@ -1,0 +1,11 @@
+{
+  "orgName": "Real Estate Demo Org",
+  "edition": "Developer",
+  "features": ["MultiCurrency"],
+  "settings": {
+    "orgPreferenceSettings": {
+      "s1DesktopEnabled": true,
+      "networksEnabled": true
+    }
+  }
+}
