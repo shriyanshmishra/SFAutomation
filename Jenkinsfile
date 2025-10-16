@@ -60,6 +60,14 @@ pipeline {
                 sh "sf project deploy start"
             }
         }
+        
+        stage('Install Python dependencies') {
+            steps {
+                echo 'Installing Python dependencies (pandas)...'
+                sh "${PYTHON} -m pip install --upgrade pip"
+                sh "${PYTHON} -m pip install pandas"
+            }
+        }
 
         stage('Generate Data CSVs') {
             steps {
