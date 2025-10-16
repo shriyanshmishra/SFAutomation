@@ -1,0 +1,69 @@
+name: Salesforce Automation Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      SF_ALIAS: RealEstateDemoScratch
+      DEV_HUB_ALIAS: DevHub
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Install Salesforce CLI
+        uses: forcedotcom/cli-action@v1
+
+      - name: Write server.key from secret
+        run: |
+          echo "${{ secrets.SERVER_KEY }}" > server.key
+
+      - name: Authenticate to Dev Hub (JWT)
+        run: |
+          sf org login jwt \
+            --username ${{ secrets.SF_USERNAME }} \
+            --jwt-key-file server.key \
+            --client-id ${{ secrets.CLIENT_ID }} \
+            --set-default-dev-hub \
+            --alias $DEV_HUB_ALIAS
+
+      - name: Delete old scratch org if exists
+        run: |
+          sf org list --all | grep $SF_ALIAS && sf org delete scratch --target-org $SF_ALIAS -p || echo "No existing scratch org"
+
+      - name: Create scratch org
+        run: |
+          sf org create scratch -f config/project-scratch-def.json -a $SF_ALIAS --duration-days 7 --set-default
+
+      - name: Push metadata
+        run: sf project deploy start
+
+      - name: Setup Python environment
+        run: |
+          python3 -m venv venv
+          . venv/bin/activate
+          pip install --upgrade pip
+          pip install pandas
+
+      - name: Generate CSVs from Excel
+        run: |
+          . venv/bin/activate
+          python scripts/generate_csv.py
+
+      - name: Import Demo Data
+        run: |
+          . venv/bin/activate
+          python scripts/import_data.py
+
+      - name: Pipeline Results and Scratch Org URL
+        if: always()
+        run: |
+          echo "✅ Pipeline completed successfully!"
+          echo "🔗 Scratch Org URL:"
+          sf org open --target-org $SF_ALIAS -r
