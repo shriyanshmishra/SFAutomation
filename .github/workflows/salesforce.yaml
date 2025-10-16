@@ -39,7 +39,7 @@ jobs:
             --jwt-key-file server.key \
             --client-id "$CLIENT_ID" \
             --alias MainOrg \
-            --set-default-org            
+            --set-default            
 
     #   - name: Validate Metadata deployment (checkonly)
     #     run: |
