@@ -4,11 +4,9 @@ pipeline {
     environment {
         SF_ALIAS = "RealEstateDemoScratch"
         DEV_HUB_ALIAS = "DevHub"
-        // These match the IDs in your Jenkins credentials setup
-        SF_USERNAME = credentials('sf-username')
-        CONNECTED_APP_CONSUMER_KEY = credentials('sf-client-id')
-        // This references your JWT .key file
-        JWT_KEY_FILE = credentials('sf-jwt-key')
+        SF_USERNAME = credentials('sf-username')                // Dev Hub user's email
+        CONNECTED_APP_CONSUMER_KEY = credentials('sf-client-id')// Connected App Consumer Key
+        JWT_KEY_FILE = credentials('sf-jwt-key')                // server.key (private key file)
         PYTHON = "python"
     }
 
@@ -26,7 +24,7 @@ pipeline {
                 sh """
                 sf org login jwt \
                   --username "${SF_USERNAME}" \
-                  --key-file "${JWT_KEY_FILE}" \
+                  --jwt-key-file "${JWT_KEY_FILE}" \
                   --client-id "${CONNECTED_APP_CONSUMER_KEY}" \
                   --set-default-dev-hub \
                   --alias "${DEV_HUB_ALIAS}"
