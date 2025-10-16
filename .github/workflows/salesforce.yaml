@@ -1,4 +1,4 @@
-name: Salesforce Main Org Deployment Validation
+name: Salesforce Data Import Pipeline
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  validate_deploy:
+  import_data:
     runs-on: ubuntu-latest
 
     env:
@@ -21,29 +21,29 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Salesforce CLI
+      - name: Install Salesforce CLI (sf)
         run: |
           npm install @salesforce/cli --location=global
           echo "$(npm config get prefix)/bin" >> $GITHUB_PATH
+
+      - name: Install SFDX CLI (legacy for CSV import)
+        run: |
+          npm install sfdx-cli --location=global
 
       - name: Write server.key from secret
         run: echo "${{ secrets.SERVER_KEY }}" > server.key
 
       - name: Authenticate to Main Org (JWT)
         env:
-            SF_USERNAME: ${{ secrets.SF_USERNAME }}
-            CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          SF_USERNAME: ${{ secrets.SF_USERNAME }}
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
         run: |
-            sf org login jwt \
+          sf org login jwt \
             --username "$SF_USERNAME" \
             --jwt-key-file server.key \
             --client-id "$CLIENT_ID" \
-            --alias MainOrg \
-            --set-default            
-
-    #   - name: Validate Metadata deployment (checkonly)
-    #     run: |
-    #       sf project deploy start --target-org $MAIN_ORG_ALIAS --checkonly
+            --alias $MAIN_ORG_ALIAS \
+            --set-default
 
       - name: Setup Python environment
         run: |
@@ -52,18 +52,24 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Generate CSVs from Excel (Validation run)
+      - name: Generate CSVs from Excel
         run: |
           . venv/bin/activate
           python scripts/generate_csv.py
 
-      - name: Import Demo Data (Validation run)
+      - name: Import Accounts CSV
         run: |
-          . venv/bin/activate
-          python scripts/import_data.py
+          sfdx force:data:bulk:upsert -s Account -f Account.csv -i Id --targetusername $MAIN_ORG_ALIAS
+
+      - name: Import Contacts CSV
+        run: |
+          sfdx force:data:bulk:upsert -s Contact -f Contact.csv -i Id --targetusername $MAIN_ORG_ALIAS
+
+      - name: Import Opportunities CSV
+        run: |
+          sfdx force:data:bulk:upsert -s Opportunity -f Opportunity.csv -i Id --targetusername $MAIN_ORG_ALIAS
 
       - name: Pipeline Results
         if: always()
         run: |
-          echo "✅ Pipeline completed successfully!"
-          echo "⚠️ Note: This was validation only, no changes have been applied to main org."
+          echo "✅ Pipeline completed successfully (CSV import)!"
