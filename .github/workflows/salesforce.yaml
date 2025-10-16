@@ -39,9 +39,13 @@ jobs:
             --set-default-dev-hub \
             --alias $DEV_HUB_ALIAS
 
-      - name: Delete old scratch org if exists
+      - name: Delete ALL active scratch orgs (limit free-up)
         run: |
-          sf org list --all | grep $SF_ALIAS && sf org delete scratch --target-org $SF_ALIAS -p || echo "No existing scratch org"
+          sf org list --all --json > orgs.json
+          # Delete all ACTIVE scratch orgs
+          cat orgs.json | grep -o '"alias":"[^"]*","type":"Scratch","status":"Active"' | awk -F'"' '{print $4}' | while read alias; do
+            sf org delete scratch --target-org "$alias" -p || true
+          done
 
       - name: Create scratch org
         run: |
@@ -70,6 +74,15 @@ jobs:
       - name: Pipeline Results and Scratch Org URL
         if: always()
         run: |
-          echo "✅ Pipeline completed successfully!"
+          if [ $? -eq 0 ]; then
+            echo "✅ Pipeline completed successfully!"
+          else
+            echo "❌ Pipeline failed — check logs for details."
+          fi
           echo "🔗 Scratch Org URL:"
-          sf org open --target-org $SF_ALIAS -r
+          sf org open --target-org $SF_ALIAS -r || echo "No active org to open."
+          
+    #   - name: Cleanup (Delete Scratch Org at End)
+    #     if: always()
+    #     run: |
+    #       sf org delete scratch --target-org $SF_ALIAS -p || echo "Scratch org not found for cleanup."
